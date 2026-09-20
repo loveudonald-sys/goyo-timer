@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <title>고요 집중 타이머</title>
+  <style>
+    :root { --bg:#0b0b0b; --fg:#f3ead8; --muted:#9a917f; --ring:#c9b896; --btn:#e8d7b8; --btn-fg:#1a1610; }
+    * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+    html,body { margin:0; height:100%; background:var(--bg); color:var(--fg); font-family:sans-serif; }
+    body { display:flex; flex-direction:column; min-height:100dvh; padding:20px 18px 28px; }
+    .label { font-size:11px; letter-spacing:.18em; color:var(--muted); }
+    .title { margin-top:6px; font-size:22px; text-decoration:underline; text-underline-offset:6px; }
+    .row { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:22px 0 18px; }
+    .chip { border:0; border-radius:18px; padding:14px 12px; background:#1a1a1a; color:var(--fg); }
+    .chip.on { outline:1px solid #4a463c; }
+    .themes { display:flex; gap:10px; }
+    .theme { min-width:58px; border:0; background:transparent; color:var(--muted); display:flex; flex-direction:column; align-items:center; gap:8px; }
+    .theme.on { background:#1c1c1c; color:var(--fg); border-radius:16px; }
+    .dot { width:18px; height:18px; border-radius:50%; }
+    .stage { flex:1; display:grid; place-items:center; }
+    .ring { width:min(78vw,320px); aspect-ratio:1; border-radius:50%; border:3px solid var(--ring); display:grid; place-items:center; text-align:center; }
+    .time { font-size:64px; line-height:1; }
+    .sub { margin-top:10px; color:var(--muted); }
+    .controls { display:flex; align-items:center; justify-content:center; gap:16px; }
+    .round { width:48px; height:48px; border-radius:50%; border:1px solid #3a3a3a; background:transparent; color:var(--fg); }
+    .start { min-width:160px; height:52px; border:0; border-radius:28px; background:var(--btn); color:var(--btn-fg); font-size:18px; }
+    body.t-pink { --bg:#1a1014; --fg:#f7dce4; --ring:#e8a0b4; --btn:#f3c1ce; }
+    body.t-hanji { --bg:#1c1812; --fg:#f4ead2; --ring:#e6d3a8; --btn:#efe0be; }
+    body.t-fog { --bg:#101318; --fg:#dbe6ef; --ring:#a9c0d2; --btn:#c9d7e3; }
+    body.t-moon { --bg:#0b1020; --fg:#dfe6ff; --ring:#6d7ec8; --btn:#c9d0f5; }
+  </style>
+</head>
+<body>
+  <div><div class="label">FOCUS TIMER</div><div class="title">고요</div></div>
+  <div class="row">
+    <button class="chip on" id="soundBtn" type="button">안내 소리</button>
+    <button class="chip" id="blinkBtn" type="button">깜맥임</button>
+  </div>
+  <div class="themes">
+    <button class="theme on" data-theme="" type="button"><span class="dot" style="background:#111"></span>먹</button>
+    <button class="theme" data-theme="t-pink" type="button"><span class="dot" style="background:#e8a0b4"></span>분홍</button>
+    <button class="theme" data-theme="t-hanji" type="button"><span class="dot" style="background:#e6d3a8"></span>한지</button>
+    <button class="theme" data-theme="t-fog" type="button"><span class="dot" style="background:#a9c0d2"></span>안개</button>
+    <button class="theme" data-theme="t-moon" type="button"><span class="dot" style="background:#4a5aa8"></span>달</button>
+  </div>
+  <div class="stage"><div class="ring"><div><div class="time" id="time">25:00</div><div class="sub" id="status">집중</div></div></div></div>
+  <div class="controls">
+    <button class="round" id="reset" type="button">↻</button>
+    <button class="start" id="start" type="button">▶ 시작</button>
+    <button class="round" id="skip" type="button">⏭</button>
+  </div>
+  <script>
+    const TOTAL=25*60; let left=TOTAL, running=false, timer=null;
+    const soundOn=()=>document.getElementById('soundBtn').classList.contains('on');
+    function fmt(s){return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');}
+    function beep(){ if(!soundOn())return; const ctx=new (window.AudioContext||window.webkitAudioContext)(); const o=ctx.createOscillator(); const g=ctx.createGain(); o.connect(g); g.connect(ctx.destination); o.frequency.value=660; g.gain.value=0.05; o.start(); setTimeout(()=>{o.stop();ctx.close();},180); }
+    function render(){ document.getElementById('time').textContent=fmt(left); document.getElementById('start').textContent=running?'일시정지':(left===0?'다시':'▶ 시작'); document.getElementById('status').textContent=left===0?'끝':'집중'; }
+    function tick(){ if(left<=0){ running=false; clearInterval(timer); beep(); render(); return;} left-=1; render(); }
+    document.getElementById('start').onclick=()=>{ if(left===0) left=TOTAL; running=!running; clearInterval(timer); if(running){ beep(); timer=setInterval(tick,1000);} render(); };
+    document.getElementById('reset').onclick=()=>{ running=false; clearInterval(timer); left=TOTAL; render(); };
+    document.getElementById('skip').onclick=()=>{ left=0; running=false; clearInterval(timer); render(); };
+    document.getElementById('soundBtn').onclick=e=>e.currentTarget.classList.toggle('on');
+    document.getElementById('blinkBtn').onclick=e=>e.currentTarget.classList.toggle('on');
+    document.querySelectorAll('.theme').forEach(btn=>btn.onclick=()=>{ document.querySelectorAll('.theme').forEach(b=>b.classList.remove('on')); btn.classList.add('on'); document.body.className=btn.dataset.theme; });
+    render();
+  </script>
+</body>
+</html>
